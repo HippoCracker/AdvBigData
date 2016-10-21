@@ -1,6 +1,7 @@
 package com.main;
 
 import org.json.simple.JSONObject;
+import org.json.simple.parser.ParseException;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.stereotype.Controller;
@@ -10,40 +11,56 @@ import org.springframework.web.bind.annotation.*;
 @SpringBootApplication
 public class AdvBigDataApplication {
 
+	private static RedisConnection conn = new RedisConnection();
+
 	@GetMapping("/posts")
 	@ResponseBody
-	JSONObject getAllPosts() {
-		return new JSONObject();
+	String getAllPosts() {
+		String posts = conn.getAll();
+		return posts;
 	}
 
 	@GetMapping("/posts/{postId}")
 	@ResponseBody
-	JSONObject getPost(@PathVariable String postId) {
-		return null;
+	String getPost(@PathVariable String postId) {
+		String post = conn.get(postId);
+		return post;
 	}
 
 	@PostMapping("/posts/{postId}")
 	@ResponseBody
-	String createPost(@PathVariable String postId) {
-		return "Your post request id: " + postId;
+	String createPost(@PathVariable String postId,
+										@RequestBody String data) {
+		String result = conn.create(postId, data);
+		return "Post saved. ID: " + postId;
 	}
 
 	@DeleteMapping("/posts/{postId}")
 	@ResponseBody
 	String deletePost(@PathVariable String postId) {
-		return null;
+		Long result = conn.delete(postId);
+		return "return value is " + result;
 	}
 
 	@PatchMapping("/posts/{postId}")
 	@ResponseBody
-	String patchPost(@PathVariable String postId) {
-		return null;
+	String patchPost(@PathVariable String postId,
+									 @RequestBody String content) {
+		String result = null;
+		try {
+			result = conn.patch(postId, content);
+		} catch (ParseException e) {
+			return "There's a parsing error";
+		}
+		return result;
 	}
 
 	@PutMapping("/posts/{postId}")
 	@ResponseBody
-	String putPost(@PathVariable String postId) {
-		return null;
+	String putPost(@PathVariable String postId,
+								 @RequestBody String content) {
+		String result = conn.put(postId, content);
+		return result;
 	}
 
 	@RequestMapping("/")
