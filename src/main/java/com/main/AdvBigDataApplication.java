@@ -7,6 +7,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Controller
 @SpringBootApplication
 public class AdvBigDataApplication {
@@ -45,13 +48,18 @@ public class AdvBigDataApplication {
 	@PatchMapping("/posts/{postId}")
 	@ResponseBody
 	String patchPost(@PathVariable String postId,
-									 @RequestBody String content) {
-		String result = null;
-		try {
-			result = conn.patch(postId, content);
-		} catch (ParseException e) {
-			return "There's a parsing error";
-		}
+									 @RequestBody String data) {
+		String post;
+		post = conn.get(postId);
+		Map<String, String> postMap = Json.deserialize(post);
+		Map<String, String> newAttrMap = Json.deserialize(data);
+		String test = Json.serialize(newAttrMap);
+		System.out.println(test);
+		Map<String, String> mergeResult = new HashMap<>();
+		mergeResult.putAll(postMap);
+		mergeResult.putAll(newAttrMap);
+
+		String result = conn.put(postId, Json.serialize(mergeResult));
 		return result;
 	}
 

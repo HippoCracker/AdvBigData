@@ -45,17 +45,4 @@ public class RedisConnection {
     return result;
   }
 
-  public String patch(String id, String val) throws ParseException {
-    String post = jedis.get("post:" + id);
-    JSONObject obj = (JSONObject)parser.parse(post);
-    JSONObject newValue = (JSONObject)parser.parse(val);
-    for (Object keyObj : newValue.keySet()) {
-      String k = String.valueOf(keyObj);
-      String v = String.valueOf(newValue.get(k));
-      obj.put(k, v);
-    }
-    String result = jedis.set("post:" + id, obj.toJSONString());
-    return result;
-  }
-
 }
