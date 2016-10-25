@@ -51,14 +51,14 @@ public class AdvBigDataApplication {
 									 @RequestBody String data) {
 		String post;
 		post = conn.get(postId);
-		Map<String, String> postMap = Json.deserialize(post);
-		Map<String, String> newAttrMap = Json.deserialize(data);
-		String test = Json.serialize(newAttrMap);
-		System.out.println(test);
-		Map<String, String> mergeResult = new HashMap<>();
+		Map<String, Object> postMap = Json.deserialize(post);
+		Map<String, Object> newAttrMap = Json.deserialize(data);
+		Map<String, Object> mergeResult = new HashMap<>();
 		mergeResult.putAll(postMap);
 		mergeResult.putAll(newAttrMap);
 
+		String test = Json.serialize(mergeResult);
+		System.out.println(test);
 		String result = conn.put(postId, Json.serialize(mergeResult));
 		return result;
 	}
