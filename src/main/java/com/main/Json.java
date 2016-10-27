@@ -11,14 +11,20 @@ public class Json {
 
   private Json() {}
 
-  public static Map<String, Object> deserialize(String data) {
+  public static String serialize(Map<String, Object> source) {
+    return gson.toJson(source);
+  }
+
+  public static Map<String, Object> deserialize(String source) {
+    return gson.fromJson(source, new TypeToken<Map<String, Object>>(){}.getType());
+  }
+
+  public static Map<String, Object> flatten(Map<String, Object> source) {
     Map<String, Object> result = new HashMap<>();
-    if (data == null || data.length() == 0) {
+    if (source == null) {
       return result;
     }
-    Map<String, Object> map =
-          gson.fromJson(data, new TypeToken<Map<String, Object>>(){}.getType());
-    flatten(result, map, "");
+    flatten(result, source, "");
     return result;
   }
 
@@ -68,7 +74,7 @@ public class Json {
     return prefix.length() == 0 ? key : prefix + "." + key;
   }
 
-  public static String serialize(Map<String, Object> source) {
+  public static String restore(Map<String, Object> source) {
     if (source == null || source.keySet().size() == 0) {
       return "";
     }

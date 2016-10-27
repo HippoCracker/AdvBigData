@@ -45,4 +45,8 @@ public class RedisConnection {
     return result;
   }
 
+  public String loadSchema(String index) {
+    String schema = jedis.get(index +"._schema");
+    return schema;
+  }
 }
