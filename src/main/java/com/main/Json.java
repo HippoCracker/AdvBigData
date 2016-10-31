@@ -92,15 +92,15 @@ public class Json {
       if (key.contains("_index")) {
         continue;
       }
-      restore(result, source, key, value);
+      innerRestore(result, source, key, value);
     }
     return gson.toJson(result);
   }
 
-  private static void restore(Map<String, Object> result,
-                              Map<String, Object> source,
-                              String key,
-                              Object val) {
+  private static void innerRestore(Map<String, Object> result,
+                                   Map<String, Object> source,
+                                   String key,
+                                   Object val) {
     String[] keywords = key.split("\\.");
 
     if (val instanceof List) {

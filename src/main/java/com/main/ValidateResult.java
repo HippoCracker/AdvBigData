@@ -1,8 +1,5 @@
 package com.main;
 
-/**
- * Created by zongzesheng on 10/27/16.
- */
 public class ValidateResult {
 
   private boolean success;

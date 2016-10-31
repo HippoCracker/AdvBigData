@@ -11,26 +11,17 @@ import com.github.fge.jsonschema.main.JsonSchemaFactory;
 
 import java.io.IOException;
 
-/**
- * Created by zongzesheng on 10/27/16.
- */
 public class JsonValidator {
 
   private static JsonSchemaFactory factory = JsonSchemaFactory.byDefault();
 
-
-  public static ValidateResult validate(String jsonSchema, String jsonData) {
+  public static ValidateResult validate(String jsonSchema, String jsonData) throws IOException, ProcessingException {
     ProcessingReport report = null;
-    try {
-      JsonNode schemaNode = JsonLoader.fromString(jsonSchema);
-      JsonNode dataNode = JsonLoader.fromString(jsonData);
-      JsonSchema schema = factory.getJsonSchema(schemaNode);
-      report = schema.validate(dataNode);
-    } catch (IOException e) {
+    JsonNode schemaNode = JsonLoader.fromString(jsonSchema);
+    JsonNode dataNode = JsonLoader.fromString(jsonData);
+    JsonSchema schema = factory.getJsonSchema(schemaNode);
+    report = schema.validate(dataNode);
 
-    } catch (ProcessingException e) {
-
-    }
     return createValidateResult(report);
   }
 
@@ -42,9 +33,7 @@ public class JsonValidator {
       return new ValidateResult(true, "Validation success.");
     } else {
       StringBuilder msgBuilder = new StringBuilder();
-      for (ProcessingMessage message : report) {
-        msgBuilder.append(message.getMessage()).append("\n\r");
-      }
+      msgBuilder.append(report.toString());
       return new ValidateResult(false, msgBuilder.toString());
     }
   }
