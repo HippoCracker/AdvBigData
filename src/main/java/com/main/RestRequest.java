@@ -1,10 +1,6 @@
 package com.main;
 
-import javafx.beans.binding.StringBinding;
-
-import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -43,20 +39,25 @@ public class RestRequest {
     else
       target = OP_TARGET.DATA;
 
+    params.put("_uuid", getUUID());
+
     String id;
     if (target == OP_TARGET.SCHEMA) {
       id = "_schema";
     } else if (rawPathTokens.length == 4) {
       id = rawPathTokens[3];
     } else {
-      id = getUUID();
+      id = params.get("_uuid");
     }
 
     params.put("_id", id);
     params.put("_index", rawPathTokens[1]);
     params.put("_type", rawPathTokens[2]);
 
+    if (content == null) return;
+
     content.put("_id", id);
+    content.put("_uuid", params.get("_uuid"));
     content.put("_uri", rawPath);
     content.put("_version", 0);
     content.put("_index", rawPathTokens[1]);
@@ -67,12 +68,28 @@ public class RestRequest {
     return  UUID.randomUUID().toString().replaceAll("-", "");
   }
 
-  public String schemaUri() {
+  public String schemaKey() {
     StringBuilder sb = new StringBuilder();
-    sb.append("/").append(param("_index"));
-    sb.append("/").append(param("_type"));
-    sb.append("/").append("_schema");
+    sb.append(param("_index")).append(".");
+    sb.append(param("_type")).append(".");
+    sb.append("_schema");
     return sb.toString();
+  }
+
+  public String key() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(param("_index"));
+    sb.append(".").append(param("_type"));
+    sb.append(".").append(param("_id"));
+    return sb.toString();
+  }
+
+  public String value() {
+    if (target() == OP_TARGET.SCHEMA) {
+      return rawContent;
+    } else {
+      return Json.serialize(flattenContent());
+    }
   }
 
   public String uri() {
