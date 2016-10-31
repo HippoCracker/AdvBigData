@@ -28,16 +28,16 @@ public class RedisConnection {
       if (key.contains(excludePattern)) {
         continue;
       }
-      String result = jedis.get(key);
+      String result = get(key);
       valueBuilder.append(result).append("\n");
-
     }
     return valueBuilder.toString();
   }
 
   public String get(String id) {
     String result = jedis.get(id);
-    return result;
+    String restoredResult = Json.restore(Json.deserialize(result));
+    return restoredResult;
   }
 
   public String create(String id, String data) {
