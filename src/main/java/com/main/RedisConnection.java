@@ -8,6 +8,7 @@ import redis.clients.jedis.Jedis;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 
 public class RedisConnection {
@@ -20,23 +21,32 @@ public class RedisConnection {
     parser = new JSONParser();
   }
 
-  public String getAll() {
-    String result = jedis.get("*");
-    return result;
+  public String getAllAndExclude(String pattern, String excludePattern) {
+    StringBuilder valueBuilder = new StringBuilder();
+    Set<String> keys = jedis.keys(pattern);
+    for (String key : keys) {
+      if (key.contains(excludePattern)) {
+        continue;
+      }
+      String result = jedis.get(key);
+      valueBuilder.append(result).append("\n");
+
+    }
+    return valueBuilder.toString();
   }
 
   public String get(String id) {
-    String result = jedis.get("post:" + id);
+    String result = jedis.get(id);
     return result;
   }
 
   public String create(String id, String data) {
-    String result = jedis.set("post:" + id, data);
+    String result = jedis.set(id, data);
     return result;
   }
 
   public Long delete(String id) {
-    Long result = jedis.del("post:" + id);
+    Long result = jedis.del(id);
     return result;
   }
 
@@ -45,8 +55,4 @@ public class RedisConnection {
     return result;
   }
 
-  public String loadSchema(String index) {
-    String schema = jedis.get(index +"._schema");
-    return schema;
-  }
 }
