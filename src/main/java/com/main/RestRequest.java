@@ -8,6 +8,7 @@ import java.util.UUID;
 
 public class RestRequest {
 
+  private String eTag;
   private String rawPath;
   private String rawContent;
   private String[] rawPathTokens;
@@ -26,6 +27,7 @@ public class RestRequest {
   public RestRequest(HttpServletRequest request, String content) {
     params = new HashMap<>();
     rawContent = content;
+    eTag = request.getHeader("If-None-Match");
     parseContent();
     fetchComponents(request);
   }
@@ -79,12 +81,10 @@ public class RestRequest {
   }
 
   public String value() {
-    if (target() == OP_TARGET.SCHEMA) {
-      return rawContent;
-    } else {
-      return Json.serialize(params);
-    }
+    return Json.serialize(params);
   }
+
+  public String eTag() { return eTag; }
 
   public String uri() {
     return rawPath;

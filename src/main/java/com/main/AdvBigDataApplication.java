@@ -7,7 +7,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,16 +28,36 @@ public class AdvBigDataApplication {
 
 	@ResponseBody
 	@GetMapping({"/{index}/{type}/{id}", "/{index}/{type}", "/{index}/{type}/_schema"})
-	String get(HttpServletRequest r) {
-		RestRequest request = new RestRequest(r, "");
-		String path = r.getRequestURI();
+	String get(HttpServletRequest req, HttpServletResponse res)
+			throws UnsupportedEncodingException {
+		RestRequest request = new RestRequest(req, "");
+
+		String path = req.getRequestURI();
 		String last = path.substring(path.lastIndexOf("/") + 1);
-		if (last.equals(request.param("_type"))) {
+
+		Map<String, Object> data;
+		if (last.equals(request.param("_type")) ||
+				last.equals("/")) {
 			String pattern = request.param("_index") + "." +
 											 request.param("_type") + ".*";
 			return conn.getAllAndExclude(pattern, "_schema");
 		} else {
-			return conn.get(request.key());
+			data = conn.getMap(request.key());
+		}
+
+		if (data == null) {
+			res.setStatus(HttpServletResponse.SC_NOT_FOUND);
+			return "Data not exists: " + req.getRequestURI();
+		}
+
+		String key = (String)data.get("_uri") + data.get("_version");
+		String eTag = RestUtils.generateETag(key);
+		res.setHeader("ETag", eTag);
+		if (eTag.equals(request.eTag())) {
+			res.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+			return "";
+		} else {
+			return Json.serialize(data);
 		}
 	}
 
@@ -43,15 +65,20 @@ public class AdvBigDataApplication {
 	// or delete this one first.
 	@ResponseBody
 	@PostMapping({"/{index}/{type}/{id}", "/{index}/{type}", "/{index}/{type}/_schema"})
-	String create(HttpServletRequest r, @RequestBody String content)
+	String create(HttpServletRequest req,
+								HttpServletResponse res,
+								@RequestBody String content)
 			throws IOException, ProcessingException {
-		StringBuilder msgBuilder = new StringBuilder();
 
-		RestRequest request = new RestRequest(r, content);
+		StringBuilder msgBuilder = new StringBuilder();
+		RestRequest request = new RestRequest(req, content);
+
 		if (request.target() == RestRequest.OP_TARGET.DATA) {
-			String schema = conn.get(request.schemaKey());
+			Map<String, Object> schemaMap = conn.getMap(request.schemaKey());
 			ValidateResult validateResult =
-					JsonValidator.validate(schema, request.rawContent());
+					JsonValidator.validate(
+							Json.restore((Map)schemaMap.get("properties")),
+							request.rawContent());
 
 			if (!validateResult.success()) {
 				msgBuilder.append("Error in validation: \n")
@@ -65,23 +92,27 @@ public class AdvBigDataApplication {
 				.append(request.param("_id"))
 				.append("\n").append(result);
 
+		String eTag = RestUtils.generateETag(request.key() + request.eTag());
+		res.setHeader("ETag", eTag);
 		return msgBuilder.toString();
 	}
 
 	@ResponseBody
 	@DeleteMapping({"/{index}/{type}/{id}", "/{index}/{type}/_schema"})
-	String delete(HttpServletRequest r) {
-		RestRequest request = new RestRequest(r, "");
+	String delete(HttpServletRequest req) {
+		RestRequest request = new RestRequest(req, "");
 		Long result = conn.delete(request.key());
 		return "Delete opertaion result: " + result;
 	}
 
 	@ResponseBody
 	@PatchMapping({"/{index}/{type}/{id}", "/{index}/{type}/_schema"})
-	String patch(HttpServletRequest r, @RequestBody String content)
+	String patch(HttpServletRequest req,
+							 HttpServletResponse res,
+							 @RequestBody String content)
 			throws IOException, ProcessingException {
 
-		RestRequest request = new RestRequest(r, content);
+		RestRequest request = new RestRequest(req, content);
 		Map<String, Object> newAttrMap = request.flattenContent();
 
 		String data = conn.get(request.key());
@@ -94,9 +125,9 @@ public class AdvBigDataApplication {
 
 		StringBuilder msgBuilder = new StringBuilder();
 		if (request.target() == RestRequest.OP_TARGET.DATA) {
-			String schema = conn.get(request.schemaKey());
-			ValidateResult validateResult =
-					JsonValidator.validate(schema, mergeJson);
+			Map<String, Object> schemaMap = conn.getMap(request.schemaKey());
+			ValidateResult validateResult = JsonValidator.validate(
+							Json.restore((Map)schemaMap.get("properties")), mergeJson);
 			if (!validateResult.success()) {
 				msgBuilder.append("Error in schema validation: \n")
 									.append(validateResult.message());
@@ -108,6 +139,10 @@ public class AdvBigDataApplication {
 		String result = conn.put(request.key(), Json.serialize(dataMap));
 		msgBuilder.append("Data MERGE: ID = ").append(request.param("_id"))
 							.append("\nResult:\n").append(result);
+
+		String eTag = RestUtils.generateETag(request.key() + request.eTag());
+		res.setHeader("ETag", eTag);
+
 		return msgBuilder.toString();
 	}
 
@@ -117,9 +152,9 @@ public class AdvBigDataApplication {
 			throws IOException, ProcessingException {
 		RestRequest request = new RestRequest(r, content);
 		StringBuilder msgBuilder = new StringBuilder();
-		String schema = conn.get(request.schemaKey());
-		ValidateResult validateResult =
-				JsonValidator.validate(schema, request.rawContent());
+		Map<String, Object> schemaMap = conn.getMap(request.schemaKey());
+		ValidateResult validateResult = JsonValidator.validate(
+				Json.restore((Map)schemaMap.get("properties")), request.rawContent());
 		if (!validateResult.success()) {
 			msgBuilder.append("Error in schema validation: \n")
 								.append(validateResult.message());

@@ -35,9 +35,13 @@ public class RedisConnection {
   }
 
   public String get(String id) {
-    String result = jedis.get(id);
-    String restoredResult = Json.restore(Json.deserialize(result));
+    String restoredResult = Json.restore(getMap(id));
     return restoredResult;
+  }
+
+  public Map<String, Object> getMap(String id) {
+    String result = jedis.get(id);
+    return Json.deserialize(result);
   }
 
   public String create(String id, String data) {
