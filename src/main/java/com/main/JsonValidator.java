@@ -16,6 +16,12 @@ public class JsonValidator {
   private static JsonSchemaFactory factory = JsonSchemaFactory.byDefault();
 
   public static ValidateResult validate(String jsonSchema, String jsonData) throws IOException, ProcessingException {
+    if (jsonSchema == null || jsonSchema.length() == 0) {
+      jsonSchema = "{}";
+    }
+    if (jsonData == null || jsonData.length() == 0) {
+      jsonData = "{}";
+    }
     ProcessingReport report = null;
     JsonNode schemaNode = JsonLoader.fromString(jsonSchema);
     JsonNode dataNode = JsonLoader.fromString(jsonData);
