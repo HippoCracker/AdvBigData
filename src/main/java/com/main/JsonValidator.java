@@ -17,10 +17,10 @@ public class JsonValidator {
 
   public static ValidateResult validate(String jsonSchema, String jsonData) throws IOException, ProcessingException {
     if (jsonSchema == null || jsonSchema.length() == 0) {
-      jsonSchema = "{}";
+      return new ValidateResult(true, "Schema does not exists, all data accepted.");
     }
     if (jsonData == null || jsonData.length() == 0) {
-      jsonData = "{}";
+      return new ValidateResult(false, "Empty data, validation rejected.");
     }
     ProcessingReport report = null;
     JsonNode schemaNode = JsonLoader.fromString(jsonSchema);
