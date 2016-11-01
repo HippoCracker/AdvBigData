@@ -14,6 +14,9 @@ import java.util.Map;
 
 // TODO: Integer save to redis as *number* which will cause validation fail
 // TODO: validate whether schema is valid schema
+// TODO: Auto-generate schema base on user data, if there's not schema at all.
+// TODO: E-Tag
+// TODO: Authorization, JWT: validate token
 
 @Controller
 @SpringBootApplication
@@ -36,9 +39,12 @@ public class AdvBigDataApplication {
 		}
 	}
 
+	// TODO: If key exists not create a new one, ask user use other methods
+	// or delete this one first.
 	@ResponseBody
 	@PostMapping({"/{index}/{type}/{id}", "/{index}/{type}", "/{index}/{type}/_schema"})
-	String create(HttpServletRequest r, @RequestBody String content) throws IOException, ProcessingException {
+	String create(HttpServletRequest r, @RequestBody String content)
+			throws IOException, ProcessingException {
 		StringBuilder msgBuilder = new StringBuilder();
 
 		RestRequest request = new RestRequest(r, content);
@@ -78,26 +84,28 @@ public class AdvBigDataApplication {
 		RestRequest request = new RestRequest(r, content);
 		Map<String, Object> newAttrMap = request.flattenContent();
 
-		String post = conn.get(request.key());
-		Map<String, Object> postMap = Json.deserialize(post);
-		Json.flatten(postMap);
+		String data = conn.get(request.key());
+		Map<String, Object> dataMap = Json.deserialize(data);
 
 		Map<String, Object> mergeResult = new HashMap<>();
-		mergeResult.putAll(postMap);
+		mergeResult.putAll((Map)dataMap.get("properties"));
 		mergeResult.putAll(newAttrMap);
-
 		String mergeJson = Json.serialize(mergeResult);
 
 		StringBuilder msgBuilder = new StringBuilder();
 		if (request.target() == RestRequest.OP_TARGET.DATA) {
 			String schema = conn.get(request.schemaKey());
-			ValidateResult validateResult = JsonValidator.validate(schema, mergeJson);
+			ValidateResult validateResult =
+					JsonValidator.validate(schema, mergeJson);
 			if (!validateResult.success()) {
-				msgBuilder.append("Error in schema validation: \n").append(validateResult.message());
+				msgBuilder.append("Error in schema validation: \n")
+									.append(validateResult.message());
 			}
 		}
+		dataMap.put("properties", mergeResult);
+		incrementVersion(dataMap);
 
-		String result = conn.put(request.key(), mergeJson);
+		String result = conn.put(request.key(), Json.serialize(dataMap));
 		msgBuilder.append("Data MERGE: ID = ").append(request.param("_id"))
 							.append("\nResult:\n").append(result);
 		return msgBuilder.toString();
@@ -105,17 +113,23 @@ public class AdvBigDataApplication {
 
 	@ResponseBody
 	@PutMapping({"/{index}/{type}/{id}", "/{index}/{type}/_schema"})
-	String put(HttpServletRequest r,
-						 @RequestBody String content) throws IOException, ProcessingException {
+	String put(HttpServletRequest r, @RequestBody String content)
+			throws IOException, ProcessingException {
 		RestRequest request = new RestRequest(r, content);
 		StringBuilder msgBuilder = new StringBuilder();
 		String schema = conn.get(request.schemaKey());
-		ValidateResult validateResult = JsonValidator.validate(schema, request.rawContent());
+		ValidateResult validateResult =
+				JsonValidator.validate(schema, request.rawContent());
 		if (!validateResult.success()) {
-			msgBuilder.append("Error in schema validation: \n").append(validateResult.message());
+			msgBuilder.append("Error in schema validation: \n")
+								.append(validateResult.message());
 		}
 
-		String result = conn.put(request.key(), request.value());
+		String data = conn.get(request.key());
+		Map<String, Object> dataMap = Json.deserialize(data);
+		dataMap.put("properties", request.content());
+		incrementVersion(dataMap);
+		String result = conn.put(request.key(), Json.serialize(dataMap));
 		msgBuilder.append("Data PUT: ID = ").append(request.param("_id"))
 				.append("\nResult:\n").append(result);
 		return msgBuilder.toString();
@@ -129,5 +143,16 @@ public class AdvBigDataApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(AdvBigDataApplication.class, args);
+	}
+
+	private void incrementVersion(Map<String, Object> map) {
+		Object v = map.get("_version");
+		double version;
+		if (v instanceof String) {
+			version = Double.parseDouble((String) v);
+		} else {
+			version = (double) v;
+		}
+		map.put("_version", version + 1);
 	}
 }

@@ -13,7 +13,7 @@ public class RestRequest {
   private String[] rawPathTokens;
   private OP_TARGET target;
 
-  private Map<String, String> params;
+  private Map<String, Object> params;
   private Map<String, Object> content;
   private Map<String, Object> flattenContent;
 
@@ -47,21 +47,15 @@ public class RestRequest {
     } else if (rawPathTokens.length == 4) {
       id = rawPathTokens[3];
     } else {
-      id = params.get("_uuid");
+      id = (String) params.get("_uuid");
     }
 
     params.put("_id", id);
     params.put("_index", rawPathTokens[1]);
     params.put("_type", rawPathTokens[2]);
-
-    if (content == null) return;
-
-    content.put("_id", id);
-    content.put("_uuid", params.get("_uuid"));
-    content.put("_uri", rawPath);
-    content.put("_version", 0);
-    content.put("_index", rawPathTokens[1]);
-    content.put("_type", rawPathTokens[2]);
+    params.put("_version", "0");
+    params.put("_uri", rawPath);
+    params.put("properties", flattenContent());
   }
 
   private String getUUID() {
@@ -88,7 +82,7 @@ public class RestRequest {
     if (target() == OP_TARGET.SCHEMA) {
       return rawContent;
     } else {
-      return Json.serialize(flattenContent());
+      return Json.serialize(params);
     }
   }
 
@@ -96,7 +90,7 @@ public class RestRequest {
     return rawPath;
   }
 
-  public String param(String key) {
+  public Object param(String key) {
     return params.get(key);
   }
 
