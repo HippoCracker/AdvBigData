@@ -57,6 +57,7 @@ public class AdvBigDataApplication {
 			res.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
 			return "";
 		} else {
+			data.put("properties", Json.restore((Map)data.get("properties")));
 			return Json.serialize(data);
 		}
 	}
@@ -77,7 +78,7 @@ public class AdvBigDataApplication {
 			Map<String, Object> schemaMap = conn.getMap(request.schemaKey());
 			ValidateResult validateResult =
 					JsonValidator.validate(
-							Json.restore((Map)schemaMap.get("properties")),
+							Json.restoreThenSerialize((Map)schemaMap.get("properties")),
 							request.rawContent());
 
 			if (!validateResult.success()) {
@@ -127,7 +128,8 @@ public class AdvBigDataApplication {
 		if (request.target() == RestRequest.OP_TARGET.DATA) {
 			Map<String, Object> schemaMap = conn.getMap(request.schemaKey());
 			ValidateResult validateResult = JsonValidator.validate(
-							Json.restore((Map)schemaMap.get("properties")), mergeJson);
+					Json.restoreThenSerialize((Map)schemaMap.get("properties")),
+					mergeJson);
 			if (!validateResult.success()) {
 				msgBuilder.append("Error in schema validation: \n")
 									.append(validateResult.message());
@@ -154,7 +156,8 @@ public class AdvBigDataApplication {
 		StringBuilder msgBuilder = new StringBuilder();
 		Map<String, Object> schemaMap = conn.getMap(request.schemaKey());
 		ValidateResult validateResult = JsonValidator.validate(
-				Json.restore((Map)schemaMap.get("properties")), request.rawContent());
+				Json.restoreThenSerialize((Map)schemaMap.get("properties")),
+				request.rawContent());
 		if (!validateResult.success()) {
 			msgBuilder.append("Error in schema validation: \n")
 								.append(validateResult.message());

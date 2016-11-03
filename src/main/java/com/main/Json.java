@@ -74,9 +74,14 @@ public class Json {
     return prefix.length() == 0 ? key : prefix + "." + key;
   }
 
-  public static String restore(Map<String, Object> source) {
+  public static String restoreThenSerialize(Map<String, Object> source) {
+    Map<String, Object> restored = restore(source);
+    return Json.serialize(restored);
+  }
+
+  public static Map<String, Object> restore(Map<String, Object> source) {
     if (source == null || source.keySet().size() == 0) {
-      return "";
+      return new HashMap<String, Object>();
     }
 
     Map<String, Object>  result = new HashMap<>();
@@ -94,7 +99,7 @@ public class Json {
       }
       innerRestore(result, source, key, value);
     }
-    return gson.toJson(result);
+    return result;
   }
 
   private static void innerRestore(Map<String, Object> result,

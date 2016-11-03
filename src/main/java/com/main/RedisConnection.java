@@ -35,7 +35,7 @@ public class RedisConnection {
   }
 
   public String get(String id) {
-    String restoredResult = Json.restore(getMap(id));
+    String restoredResult = Json.restoreThenSerialize(getMap(id));
     return restoredResult;
   }
 
