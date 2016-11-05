@@ -12,13 +12,14 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 
 // TODO: Integer save to redis as *number* which will cause validation fail
 // TODO: validate whether schema is valid schema
 // TODO: Auto-generate schema base on user data, if there's not schema at all.
-// TODO: E-Tag
 // TODO: Authorization, JWT: validate token
+// TODO: Json.restoreMap methods not work, not restore flat list back.
 
 @Controller
 @SpringBootApplication
@@ -150,11 +151,15 @@ public class AdvBigDataApplication {
 
 	@ResponseBody
 	@PutMapping({"/{index}/{type}/{id}", "/{index}/{type}/_schema"})
-	String put(HttpServletRequest r, @RequestBody String content)
+	String put(HttpServletRequest req,
+						 HttpServletResponse res,
+						 @RequestBody String content)
 			throws IOException, ProcessingException {
-		RestRequest request = new RestRequest(r, content);
+
+		RestRequest request = new RestRequest(req, content);
 		StringBuilder msgBuilder = new StringBuilder();
 		Map<String, Object> schemaMap = conn.getMap(request.schemaKey());
+
 		ValidateResult validateResult = JsonValidator.validate(
 				Json.restoreThenSerialize((Map)schemaMap.get("properties")),
 				request.rawContent());
@@ -168,6 +173,9 @@ public class AdvBigDataApplication {
 		dataMap.put("properties", request.content());
 		incrementVersion(dataMap);
 		String result = conn.put(request.key(), Json.serialize(dataMap));
+
+		String eTag = RestUtils.generateETag(request.key() + request.eTag());
+		res.setHeader("ETag", eTag);
 		msgBuilder.append("Data PUT: ID = ").append(request.param("_id"))
 				.append("\nResult:\n").append(result);
 		return msgBuilder.toString();
@@ -179,12 +187,9 @@ public class AdvBigDataApplication {
 		return "Welcome to the home page";
 	}
 
-	public static void main(String[] args) {
-		SpringApplication.run(AdvBigDataApplication.class, args);
-	}
-
 	private void incrementVersion(Map<String, Object> map) {
 		Object v = map.get("_version");
+		Objects.requireNonNull(v);
 		double version;
 		if (v instanceof String) {
 			version = Double.parseDouble((String) v);
@@ -192,5 +197,9 @@ public class AdvBigDataApplication {
 			version = (double) v;
 		}
 		map.put("_version", version + 1);
+	}
+
+	public static void main(String[] args) {
+		SpringApplication.run(AdvBigDataApplication.class, args);
 	}
 }
