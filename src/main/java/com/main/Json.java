@@ -57,7 +57,7 @@ public class Json {
                                  String prefix) {
     List<String> keys = new ArrayList<>();
     for (int i = 0; i < list.size(); i++) {
-      String key = concatKey("_index" + String.valueOf(i), prefix);
+      String key = concatKey("list_item" + String.valueOf(i), prefix);
       Object value = list.get(i);
 
       if (value instanceof Map) {
@@ -94,7 +94,7 @@ public class Json {
       String key = entry.getKey();
       Object value = entry.getValue();
 
-      if (key.contains("_index")) {
+      if (key.contains("list_item")) {
         continue;
       }
       innerRestore(result, source, key, value);
@@ -106,12 +106,10 @@ public class Json {
                                    Map<String, Object> source,
                                    String key,
                                    Object val) {
-    String[] keywords = key.split("\\.");
-
-    if (val instanceof List) {
-      restoreList(result, source, key, (List)val);
-      return;
+    if (key.contains("list_item")) {
+      key = key.substring(0, key.indexOf("list_item"));
     }
+    String[] keywords = key.split("\\.");
 
     Map<String, Object> nestedMap = null;
     for (int i = 0; i < keywords.length - 1; i++) {
@@ -124,6 +122,10 @@ public class Json {
         result.put(keyword, nestedMap);
       }
     }
+
+    if (val instanceof List) {
+      val = restoreList(source, (List)val);
+    }
     if (nestedMap != null) {
       nestedMap.put(keywords[keywords.length - 1], val);
     } else {
@@ -131,29 +133,14 @@ public class Json {
     }
   }
 
-  private static void restoreList(Map<String, Object> result,
-                                  Map<String, Object> source,
-                                  String key,
-                                  List<Object> val) {
+  private static List<Object> restoreList(Map<String, Object> source,
+                                          List<Object> val) {
     List<Object> values = new ArrayList<>();
     for (Object k : (List)val) {
       String keyword = String.valueOf(k);
-      values.add(retoreMap(source, keyword));
+      values.add(source.get(keyword));
     }
-    result.put(key, values);
-  }
-
-  private static Map<String, Object> retoreMap(Map<String, Object> source,
-                                               String prefix) {
-    Map<String, Object> map = new HashMap<>();
-    for (String key : source.keySet()) {
-      if (key.startsWith(prefix)) {
-        Object value = source.get(key);
-        key = key.replace(prefix + ".", "");
-        map.put(key, value);
-      }
-    }
-    return map;
+    return values;
   }
 }
 
