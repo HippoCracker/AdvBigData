@@ -14,24 +14,23 @@ import java.util.Set;
 public class RedisConnection {
 
   private Jedis jedis;
-  private JSONParser parser;
 
   public RedisConnection() {
     jedis = new Jedis("localhost");
-    parser = new JSONParser();
   }
 
   public String getAllAndExclude(String pattern, String excludePattern) {
-    StringBuilder valueBuilder = new StringBuilder();
+    StringBuilder builder = new StringBuilder();
+    builder.append("[");
     Set<String> keys = jedis.keys(pattern);
     for (String key : keys) {
       if (key.contains(excludePattern)) {
         continue;
       }
       String result = get(key);
-      valueBuilder.append(result).append("\n");
+      builder.append(result).append(",");
     }
-    return valueBuilder.toString();
+    return builder.deleteCharAt(builder.length() - 1).append("]").toString();
   }
 
   public String get(String id) {
