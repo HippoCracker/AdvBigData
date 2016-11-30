@@ -25,7 +25,7 @@ public class RestRequest {
         eTag = req.getHeader("If-None-Match");
         String path = req.getRequestURI();
         String last = path.substring(path.lastIndexOf("/") + 1);
-        if (last.equals("_schema")) {
+        if (last.equals(SCHEMA)) {
             target = OperationTarget.SCHEMA;
         } else {
             target = OperationTarget.DATA;
@@ -53,7 +53,7 @@ public class RestRequest {
 
     public String eTag() { return eTag; }
 
-    public OperationTarget OperationTarget() {
+    public OperationTarget operationTarget() {
         return target;
     }
 

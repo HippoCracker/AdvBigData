@@ -19,10 +19,10 @@ public final class Utils {
     public static final String SCHEMA_KEY ="schemaKey";
     public static final String STORAGE_KEY ="storageKey";
     public static final String E_TAG ="etag";
-    public static final String VERSION = "version";
-    public static final String ID = "id";
-    public static final String NAME = "name";
-    public static final String TYPE = "type";
+    public static final String VERSION = "_version";
+    public static final String ID = "_id";
+    public static final String NAME = "_name";
+    public static final String TYPE = "_type";
 
 
     public static <T> T notNull(T object, String message, Object... values) {

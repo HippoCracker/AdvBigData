@@ -73,9 +73,18 @@ public class JsonContext implements ParseContext, DocumentContext {
         return configuration.jsonProvider().get(json, key);
     }
 
+    public Object getFlatAttribute(String key) {
+        notNull(key, "Key cannot be null");
+        return configuration.jsonProvider().getFlatAttribute(json, key);
+    }
+
     public boolean has(String key) {
         notNull(key, "Key cannot be null");
         return configuration.jsonProvider().has(json, key);
+    }
+
+    public boolean hasFlat(String key) {
+        return configuration.jsonProvider().has(flatJson, key);
     }
 
     public void set(String key, Object newValue) {
@@ -128,5 +137,9 @@ public class JsonContext implements ParseContext, DocumentContext {
     @Override
     public String flatJsonString() {
         return configuration.jsonProvider().toJson(flatJson);
+    }
+
+    public static String toJson(Object obj) {
+        return new JsonContext().configuration.jsonProvider().toJson(obj);
     }
 }

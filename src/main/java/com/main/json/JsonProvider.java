@@ -63,6 +63,8 @@ public interface JsonProvider {
 
     Integer getAsInt(Object obj, String key);
 
+    Object getFlatAttribute(Object obj, String key);
+
     boolean has(Object obj, String key);
 
     void set(Object obj, String key, Object newValue);

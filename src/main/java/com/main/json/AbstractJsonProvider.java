@@ -21,7 +21,7 @@ public abstract class AbstractJsonProvider implements JsonProvider {
             return ((String) obj).length();
         }
         throw new IllegalArgumentException("length operation cannot apply to "
-                + obj != null ? obj.getClass().getName() : "null");
+                + (obj != null ? obj.getClass().getName() : "null"));
     }
 
     @Override
@@ -30,7 +30,7 @@ public abstract class AbstractJsonProvider implements JsonProvider {
             return ((Iterable) obj);
         } else {
             throw new IllegalArgumentException("Cannot iterate over "
-                    + obj != null ? obj.getClass().getName() : "null");
+                    + (obj != null ? obj.getClass().getName() : "null"));
         }
     }
 
@@ -77,7 +77,7 @@ public abstract class AbstractJsonProvider implements JsonProvider {
             ((Map) obj).put(key, value);
         } else {
             throw new IllegalArgumentException("setProperty operation cannot be used with "
-                    + obj != null ? obj.getClass().getName() : "null");
+                    + (obj != null ? obj.getClass().getName() : "null"));
         }
     }
 

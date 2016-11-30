@@ -379,6 +379,11 @@ public class GsonJsonProvider extends AbstractJsonProvider {
     }
 
     @Override
+    public Object getFlatAttribute(Object obj, String key) {
+        return toJsonObject(obj).get(key);
+    }
+
+    @Override
     public boolean has(Object obj, String key) {
         return toJsonObject(obj).has(key);
     }

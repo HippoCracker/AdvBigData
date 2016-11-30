@@ -65,6 +65,10 @@ public class Json {
         updateETag();
     }
 
+    public boolean isEmpty() {
+        return (jsonContext.json() == null && jsonContext.flatJson() == null);
+    }
+
     public Json parse(String json) {
         jsonContext.parse(json);
         return this;
@@ -99,9 +103,22 @@ public class Json {
         return jsonContext.get(key);
     }
 
+    public boolean has(String key) {
+        return jsonContext.has(key);
+    }
+
+    public boolean hasFlat(String key) {
+        return jsonContext.hasFlat(key);
+    }
+
     public String getAsString(String key) {
         return jsonContext.getAsString(key);
     }
+
+    public Object getFlatAttribute(String key) {
+        return jsonContext.getFlatAttribute(key);
+    }
+
 
     public String id() {
         return jsonContext.getAsString(ID);
@@ -139,7 +156,11 @@ public class Json {
     }
 
     public String eTag() {
-        return jsonContext.getAsString(E_TAG);
+        try {
+            return jsonContext.getAsString(E_TAG);
+        } catch (NullPointerException e) {
+            return "";
+        }
     }
 
     public String storageKey() { return jsonContext.getAsString(STORAGE_KEY); }

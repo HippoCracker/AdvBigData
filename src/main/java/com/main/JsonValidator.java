@@ -1,49 +1,30 @@
 package com.main;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.github.fge.jackson.JsonLoader;
-import com.github.fge.jsonschema.core.exceptions.ProcessingException;
-import com.github.fge.jsonschema.core.report.ProcessingMessage;
-import com.github.fge.jsonschema.core.report.ProcessingReport;
-import com.github.fge.jsonschema.main.JsonSchema;
-import com.github.fge.jsonschema.main.JsonSchemaFactory;
 
-import java.io.IOException;
+
+import com.google.gson.JsonElement;
+
+import java.util.Map;
+
+import static com.main.common.Utils.SCHEMA;
 
 public class JsonValidator {
 
-    private static JsonSchemaFactory factory = JsonSchemaFactory.byDefault();
-
-    public static ValidateResult validate(String jsonSchema, String jsonData)
-            throws IOException, ProcessingException {
-        if (jsonSchema == null || jsonSchema.length() == 0) {
-            return new ValidateResult(true, "Schema does not exists, all data accepted.");
+    public static ValidateResult validate(Json schema, Json data) {
+        if (schema == null || schema.flatEntrySet().size() == 0) {
+            return new ValidateResult(false, "Schema does not exists, create schema before insert data.");
         }
-        if (jsonData == null || jsonData.length() == 0) {
+        if (data == null || data.flat().flatEntrySet().size() == 0) {
             return new ValidateResult(false, "Empty data, validation rejected.");
         }
-        ProcessingReport report = null;
-        JsonNode schemaNode = JsonLoader.fromString(jsonSchema);
-        JsonNode dataNode = JsonLoader.fromString(jsonData);
-        JsonSchema schema = factory.getJsonSchema(schemaNode);
-        report = schema.validate(dataNode);
 
-        return createValidateResult(report);
-    }
-
-    private static ValidateResult createValidateResult(ProcessingReport report) {
-        if (report == null) {
-            return new ValidateResult(false, "Error in validation: ProcessingReport is NULL.");
+        for (Map.Entry<String, JsonElement> entry : data.flat().flatEntrySet()) {
+            String key = entry.getKey().replaceAll("\\d+", SCHEMA);
+            JsonElement value = entry.getValue();
+            if (!schema.hasFlat(key)) {
+                return new ValidateResult(false, "Invalid attribute: " + key);
+            }
         }
-        if (report.isSuccess()) {
-            return new ValidateResult(true, "Validation success.");
-        } else {
-            StringBuilder msgBuilder = new StringBuilder();
-            msgBuilder.append(report.toString());
-            return new ValidateResult(false, msgBuilder.toString());
-        }
+        return new ValidateResult(true, "Validation succeed");
     }
-
-
 }
