@@ -1,61 +1,55 @@
 package com.main;
 
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import redis.clients.jedis.Jedis;
 
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
 
 public class RedisConnection {
 
-  private Jedis jedis;
+    private Jedis jedis;
 
-  public RedisConnection() {
-    jedis = new Jedis("localhost");
-  }
-
-  public String getAllAndExclude(String pattern, String excludePattern) {
-    StringBuilder builder = new StringBuilder();
-    builder.append("[");
-    Set<String> keys = jedis.keys(pattern);
-    for (String key : keys) {
-      if (key.contains(excludePattern)) {
-        continue;
-      }
-      String result = get(key);
-      builder.append(result).append(",");
+    public RedisConnection() {
+        jedis = new Jedis("localhost");
     }
-    return builder.deleteCharAt(builder.length() - 1).append("]").toString();
-  }
 
-  public String get(String id) {
-    String restoredResult = Json.restoreThenSerialize(getMap(id));
-    return restoredResult;
-  }
+    public Json get(String pattern, String excludePattern) {
+        Json jsonObject = Json.flatJson();
+        Set<String> keys = keys(pattern);
+        for (String key : keys) {
+            if (excludePattern != null && key.contains(excludePattern)) {
+                continue;
+            }
+            String value = jedis.get(key);
+            jsonObject.addToFlat(key, value);
+        }
+        return jsonObject;
+    }
 
-  public Map<String, Object> getMap(String id) {
-    String result = jedis.get(id);
-    return Json.deserialize(result);
-  }
+    public Json get(String pattern) {
+        return get(pattern, null);
+    }
 
-  public String create(String id, String data) {
-    String result = jedis.set(id, data);
-    return result;
-  }
+    public String set(Set<Map.Entry<String, JsonElement>> entrySet) {
+        StringBuilder builder = new StringBuilder();
+        for (Map.Entry<String, JsonElement> entry : entrySet) {
+            String result = jedis.set(entry.getKey(), entry.getValue().toString());
+            builder.append(result).append("\n");
+        }
+        return builder.toString();
+    }
 
-  public Long delete(String id) {
-    Long result = jedis.del(id);
-    return result;
-  }
+    public void delete(String pattern) {
+        Set<String> keys = keys(pattern);
+        for (String key : keys) {
+            jedis.del(key);
+        }
+    }
 
-  public String put(String id, String val) {
-    String result =  jedis.set(id, val);
-    return result;
-  }
-
+    public Set<String> keys(String pattern) {
+        return jedis.keys(pattern + "*");
+    }
 }

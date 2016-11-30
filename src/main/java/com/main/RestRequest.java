@@ -1,121 +1,60 @@
 package com.main;
 
-import javax.servlet.http.HttpServletRequest;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import com.google.gson.JsonObject;
 
+import javax.servlet.http.HttpServletRequest;
+import static com.main.common.Utils.*;
 
 public class RestRequest {
 
-  private String eTag;
-  private String rawPath;
-  private String rawContent;
-  private String[] rawPathTokens;
-  private OP_TARGET target;
+    private String eTag;
+    private String rawJson;
+    private Json jsonObject;
+    private OperationTarget target;
 
-  private Map<String, Object> params;
-  private Map<String, Object> content;
-  private Map<String, Object> flattenContent;
-
-  public static final String WILDCARD = "*";
-
-  public enum OP_TARGET {
-    SCHEMA, DATA
-  }
-
-  public RestRequest(HttpServletRequest request, String content) {
-    params = new HashMap<>();
-    rawContent = content;
-    eTag = request.getHeader("If-None-Match");
-    parseContent();
-    fetchComponents(request);
-  }
-
-  private void fetchComponents(HttpServletRequest request) {
-    rawPath = request.getRequestURI();
-    rawPathTokens = rawPath.split("/");
-
-    if (rawPath.contains("_schema"))
-      target = OP_TARGET.SCHEMA;
-    else
-      target = OP_TARGET.DATA;
-
-    params.put("_uuid", getUUID());
-
-    String id;
-    if (target == OP_TARGET.SCHEMA) {
-      id = "_schema";
-    } else if (rawPathTokens.length == 4) {
-      id = rawPathTokens[3];
-    } else {
-      id = (String) params.get("_uuid");
+    public enum OperationTarget {
+        SCHEMA, DATA
     }
 
-    params.put("_id", id);
-    params.put("_index", rawPathTokens[1]);
-    params.put("_type", rawPathTokens[2]);
-    params.put("_version", "0");
-    params.put("_uri", rawPath);
-    params.put("properties", flattenContent());
-  }
-
-  private String getUUID() {
-    return  UUID.randomUUID().toString().replaceAll("-", "");
-  }
-
-  public String schemaKey() {
-    StringBuilder sb = new StringBuilder();
-    sb.append(param("_index")).append(".");
-    sb.append(param("_type")).append(".");
-    sb.append("_schema");
-    return sb.toString();
-  }
-
-  public String key() {
-    StringBuilder sb = new StringBuilder();
-    sb.append(param("_index"));
-    sb.append(".").append(param("_type"));
-    sb.append(".").append(param("_id"));
-    return sb.toString();
-  }
-
-  public String value() {
-    return Json.serialize(params);
-  }
-
-  public String eTag() { return eTag; }
-
-  public String uri() {
-    return rawPath;
-  }
-
-  public Object param(String key) {
-    return params.get(key);
-  }
-
-  public String rawContent() { return rawContent; }
-
-  public Map<String, Object> content() {
-    return content;
-  }
-
-  public OP_TARGET target() { return target; }
-
-  public Map<String, Object>  flattenContent() {
-    if (content == null) {
-      parseContent();
+    public RestRequest(HttpServletRequest request, String json) {
+        rawJson = json;
+        init(request);
     }
-    if (flattenContent == null) {
-      flattenContent = Json.flatten(content);
-    }
-    return flattenContent;
-  }
 
-  private void parseContent() {
-    if (content == null) {
-      content = Json.deserialize(rawContent);
+    private void init(HttpServletRequest req) {
+        eTag = req.getHeader("If-None-Match");
+        String path = req.getRequestURI();
+        String last = path.substring(path.lastIndexOf("/") + 1);
+        if (last.equals("_schema")) {
+            target = OperationTarget.SCHEMA;
+        } else {
+            target = OperationTarget.DATA;
+        }
+
+        // TODO: fix use hard code fetch uri data
+        if (!rawJson.contains(TYPE) ||!rawJson.contains(NAME) || !rawJson.contains(ID)) {
+             String[] tokens = path.split("/");
+             if (tokens.length == 4) {
+                 jsonObject = Json.emptyJson(tokens[3], tokens[2], tokens[1], rawJson);
+             } else if (tokens.length == 3) {
+                 jsonObject = Json.emptyJson("*", tokens[2], tokens[1], rawJson);
+             } else {
+                 throw new IllegalArgumentException("Illegal uri format: at least /{type}/{name}/");
+             }
+        } else {
+            jsonObject = Json.newJson(rawJson);
+        }
+
     }
-  }
+
+    public Json jsonObject() { return jsonObject; }
+
+    public String rawJson() { return rawJson; }
+
+    public String eTag() { return eTag; }
+
+    public OperationTarget OperationTarget() {
+        return target;
+    }
 
 }
