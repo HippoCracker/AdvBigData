@@ -1,9 +1,11 @@
 package com.main;
 
 import com.github.fge.jsonschema.core.exceptions.ProcessingException;
+import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -22,6 +24,11 @@ public class AdvBigDataApplication {
     @GetMapping({"/{type}/{name}/{id}", "/{type}/{name}", "/{type}/{name}/_schema"})
     String get(HttpServletRequest req, HttpServletResponse res)
             throws UnsupportedEncodingException {
+
+        if (!isAuthorized(req)) {
+            res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            return "Forbid access";
+        }
         RestRequest request = new RestRequest(req, "");
 
         Json flatJson = conn.get(request.jsonObject().storageKey());
@@ -47,6 +54,10 @@ public class AdvBigDataApplication {
                   @RequestBody String content)
             throws IOException, ProcessingException {
 
+        if (!isAuthorized(req)) {
+            res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            return "Forbid access";
+        }
         RestRequest request = new RestRequest(req, content);
 
         if (request.operationTarget() == RestRequest.OperationTarget.DATA) {
@@ -57,16 +68,20 @@ public class AdvBigDataApplication {
             }
         }
         Json flatJson = request.jsonObject().flat();
-        String result = conn.set(request.jsonObject().flat().flatEntrySet());
+        conn.set(request.jsonObject().flat().flatEntrySet());
 
         res.setHeader("ETag", request.jsonObject().eTag());
-        return "Object saved, id: " + request.jsonObject().id()
-                + "\nresult: " + result;
+        return "Object saved, id: " + request.jsonObject().id();
     }
 
     @ResponseBody
     @DeleteMapping({"/{type}/{name}/{id}", "/{type}/{name}/_schema"})
-    String delete(HttpServletRequest req) {
+    String delete(HttpServletRequest req, HttpServletResponse res) {
+
+        if (!isAuthorized(req)) {
+            res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            return "Forbid access";
+        }
         RestRequest request = new RestRequest(req, "");
         if (request.operationTarget() == RestRequest.OperationTarget.SCHEMA) {
             return "Failt to delete schema, may cause current data invalid";
@@ -81,6 +96,10 @@ public class AdvBigDataApplication {
                  HttpServletResponse res,
                  @RequestBody String content)
             throws IOException, ProcessingException {
+
+        if (!isAuthorized(req)) {
+            res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        }
 
         RestRequest request = new RestRequest(req, content);
 
@@ -97,10 +116,10 @@ public class AdvBigDataApplication {
                 return "Error in schema validation: \n" + validateResult.message();
             }
         }
-        String result = conn.set(jsonObject.flatEntrySet());
+        conn.set(jsonObject.flatEntrySet());
         res.setHeader("ETag", jsonObject.eTag());
 
-        return String.format("Merge succeed, ID = %s\n Result: %s", jsonObject.id(), result);
+        return String.format("Merge succeed, ID = %s\n Result: %s", jsonObject.id());
     }
 
     @ResponseBody
@@ -109,6 +128,11 @@ public class AdvBigDataApplication {
                HttpServletResponse res,
                @RequestBody String content)
             throws IOException, ProcessingException {
+
+        if (!isAuthorized(req)) {
+            res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            return "Forbid access";
+        }
 
         RestRequest request = new RestRequest(req, content);
 
@@ -124,16 +148,34 @@ public class AdvBigDataApplication {
 
         Json jsonObject = request.jsonObject();
         conn.delete(request.jsonObject().storageKey());
-        String result = conn.set(jsonObject.flat().flatEntrySet());
+        conn.set(jsonObject.flat().flatEntrySet());
 
         res.setHeader("ETag", jsonObject.eTag());
         return "Put object id: " + jsonObject.id();
     }
 
-    @RequestMapping("/")
+    private boolean isAuthorized(HttpServletRequest req) {
+        String authCode = req.getHeader("Authorization");
+        return conn.hasAuthCode(authCode);
+    }
+
+    @GetMapping("/")
     @ResponseBody
     String home() {
-        return "Welcome to the home page";
+        return "Welcome to home page";
+    }
+
+    @PostMapping("/")
+    @ResponseBody
+    String authorize(HttpServletRequest req,
+                     HttpServletResponse res,
+                     @RequestBody MultiValueMap<String,String> formData) {
+        String plainClientCredentials= formData.get("username") + ":" + formData.get("password");
+        String base64ClientCredentials = new String(Base64.encodeBase64(plainClientCredentials.getBytes()));
+        String key = "Basic " + base64ClientCredentials;
+        conn.saveAuthCode(key);
+        res.setHeader("Authorization", key);
+        return "";
     }
 
     public static void main(String[] args) {

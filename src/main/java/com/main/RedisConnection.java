@@ -33,6 +33,15 @@ public class RedisConnection {
         return get(pattern, null);
     }
 
+    public boolean hasAuthCode(String key) {
+        if (key == null || key.isEmpty()) return false;
+        return jedis.exists(key);
+    }
+
+    public void saveAuthCode(String key) {
+        jedis.set(key, "");
+    }
+
     public String set(Set<Map.Entry<String, JsonElement>> entrySet) {
         StringBuilder builder = new StringBuilder();
         for (Map.Entry<String, JsonElement> entry : entrySet) {
