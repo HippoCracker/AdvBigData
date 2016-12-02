@@ -40,6 +40,7 @@ public class RedisConnection {
 
     public void saveAuthCode(String key) {
         jedis.set(key, "");
+        jedis.expire(key, 600);
     }
 
     public String set(Set<Map.Entry<String, JsonElement>> entrySet) {

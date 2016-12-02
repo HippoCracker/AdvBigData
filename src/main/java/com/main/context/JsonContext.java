@@ -1,6 +1,7 @@
 package com.main.context;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.main.common.Configuration;
 import java.util.Iterator;
 import java.util.Map;
@@ -141,5 +142,9 @@ public class JsonContext implements ParseContext, DocumentContext {
 
     public static String toJson(Object obj) {
         return new JsonContext().configuration.jsonProvider().toJson(obj);
+    }
+
+    public static JsonElement parseJson(String jsonString) {
+        return (JsonElement) new JsonContext().configuration.jsonProvider().parse(jsonString);
     }
 }

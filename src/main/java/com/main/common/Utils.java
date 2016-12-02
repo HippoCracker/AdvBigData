@@ -9,9 +9,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Iterator;
 import java.util.UUID;
 
-/**
- * Created by zongzesheng on 11/27/16.
- */
 public final class Utils {
 
     public static final char SEPARATOR = '.';
@@ -19,10 +16,10 @@ public final class Utils {
     public static final String SCHEMA_KEY ="schemaKey";
     public static final String STORAGE_KEY ="storageKey";
     public static final String E_TAG ="etag";
-    public static final String VERSION = "_version";
-    public static final String ID = "_id";
-    public static final String NAME = "_name";
-    public static final String TYPE = "_type";
+    public static final String VERSION = "__version";
+    public static final String ID = "__id";
+    public static final String NAME = "__name";
+    public static final String TYPE = "__type";
 
 
     public static <T> T notNull(T object, String message, Object... values) {

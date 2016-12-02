@@ -6,9 +6,6 @@ import com.main.json.JsonProvider;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Created by zongzesheng on 11/27/16.
- */
 public class Configuration {
 
     public static final Set<String> RESERVED_KEYWORDS;
