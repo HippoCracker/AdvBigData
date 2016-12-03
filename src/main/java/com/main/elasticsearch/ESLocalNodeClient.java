@@ -5,9 +5,6 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 
-/**
- * Created by zongzesheng on 12/1/16.
- */
 public class ESLocalNodeClient implements ESClient {
 
     private Node node;

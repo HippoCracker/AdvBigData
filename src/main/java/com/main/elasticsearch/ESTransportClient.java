@@ -7,9 +7,6 @@ import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-/**
- * Created by zongzesheng on 12/1/16.
- */
 public class ESTransportClient implements ESClient {
 
     private TransportClient client;

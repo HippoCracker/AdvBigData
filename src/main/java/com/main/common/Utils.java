@@ -16,10 +16,10 @@ public final class Utils {
     public static final String SCHEMA_KEY ="schemaKey";
     public static final String STORAGE_KEY ="storageKey";
     public static final String E_TAG ="etag";
-    public static final String VERSION = "__version";
-    public static final String ID = "__id";
-    public static final String NAME = "__name";
-    public static final String TYPE = "__type";
+    public static final String VERSION = "_version";
+    public static final String ID = "_id";
+    public static final String NAME = "_name";
+    public static final String TYPE = "_type";
 
 
     public static <T> T notNull(T object, String message, Object... values) {
@@ -69,30 +69,6 @@ public final class Utils {
         sb.append("/").append(id).append("/").append(name).append(":").append(type);
         return sb.toString();
     }
-//
-//    public static void convertReservedKeywords(Object object) {
-//        if (!(object instanceof JsonObject)) {
-//            throw new IllegalArgumentException("Cannot convert attributes of object: "
-//                    + object.getClass().getName());
-//        }
-//        JsonObject obj = (JsonObject) object;
-//        for (String key : Configuration.RESERVED_KEYWORDS) {
-//            if (obj.has(key)) {
-//                JsonElement value = obj.get(key);
-//                String transformedKey = transformReservedKey(key);
-//                obj.add(transformedKey, value);
-//                obj.remove(key);
-//            }
-//        }
-//    }
-//
-//    private static String transformReservedKey(String key) {
-//        if (Configuration.RESERVED_KEYWORDS.contains(key) &&
-//                !key.startsWith("_")) {
-//            key = "_" + key;
-//        }
-//        return key;
-//    }
 
     public static boolean isNumeric(String str)
     {
