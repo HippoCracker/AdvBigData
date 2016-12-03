@@ -167,7 +167,7 @@ public class Json {
 
     public String schemaKey() { return jsonContext.getAsString(SCHEMA_KEY); }
 
-    public void updateETag() {
+    public Json updateETag() {
         String etag = null;
         int version = jsonContext.getAsInt(VERSION) + 1;
         try {
@@ -177,6 +177,8 @@ public class Json {
                     + storageKey + " version: " + version, e);
         }
         jsonContext.set(E_TAG, etag);
+        jsonContext.set(VERSION, version);
+        return this;
     }
 
     private String createStorageKey() {
