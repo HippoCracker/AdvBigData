@@ -6,7 +6,6 @@ import com.google.gson.JsonObject;
 import com.main.cache.Cache;
 import com.main.cache.LRUCache;
 import com.main.context.JsonContext;
-import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -41,7 +40,8 @@ public class AdvBigDataApplication {
         }
         RestRequest request = new RestRequest(req, "");
 
-        if (request.eTag().equals(cache.get(request.jsonObject().storageKey()))) {
+        if (request.eTag() != null &&
+                request.eTag().equals(cache.get(request.jsonObject().storageKey()))) {
             res.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
             return "";
         }
@@ -52,6 +52,8 @@ public class AdvBigDataApplication {
             return "Data not exists: " + req.getRequestURI();
         }
         flatJson.restore();
+        cache.put(request.jsonObject().storageKey(), flatJson.eTag());
+
         if (flatJson.hasModified(request.eTag())) {
             res.setHeader("ETag", flatJson.eTag());
             return flatJson.jsonString();
@@ -81,7 +83,7 @@ public class AdvBigDataApplication {
                 return "Error in schema validation: \n" + validateResult.message();
             }
         }
-        Json flatJson = request.jsonObject().flat();
+        request.jsonObject().flat();
         conn.set(request.jsonObject().flat().flatEntrySet());
 
         Json jsonObject = request.jsonObject();
@@ -126,7 +128,8 @@ public class AdvBigDataApplication {
         Json jsonObject = conn.get(request.jsonObject().storageKey());
         jsonObject.merge(request.jsonObject())
                 .restore()
-                .updateETag();
+                .updateETag()
+                .flat();
 
         cache.put(jsonObject.storageKey(), jsonObject.eTag());
 
@@ -141,7 +144,7 @@ public class AdvBigDataApplication {
         conn.set(jsonObject.flatEntrySet());
         res.setHeader("ETag", jsonObject.eTag());
 
-        return String.format("Merge succeed, ID = %s\n Result: %s", jsonObject.id());
+        return String.format("Merge succeed, ID = %s", jsonObject.id());
     }
 
     @ResponseBody

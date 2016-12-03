@@ -19,8 +19,11 @@ public class JsonValidator {
         }
 
         for (Map.Entry<String, JsonElement> entry : data.flat().flatEntrySet()) {
-            String key = entry.getKey().replaceAll("\\d+", SCHEMA);
+            String key = entry.getKey();
             JsonElement value = entry.getValue();
+            if (value.isJsonArray()) {
+                continue;
+            }
             if (!schema.hasFlat(key)) {
                 return new ValidateResult(false, "Invalid attribute: " + key);
             }
