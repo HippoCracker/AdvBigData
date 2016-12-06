@@ -206,6 +206,16 @@ public class AdvBigDataApplication {
         return elasticSearch.search(index, type, jsonElement);
     }
 
+    @ResponseBody
+    @RequestMapping("/_jsonpath")
+    String jsonPath(@RequestBody String body) {
+        JsonObject jsonObject = JsonContext.parseJson(body).getAsJsonObject();
+        Path path = new Path(jsonObject.get("jsonpath").getAsString());
+        Json json = conn.get(path.getKeyPattern());
+        String result = new JsonFilter(json, path.getFilterPattern()).getResult();
+        return result;
+    }
+
     @GetMapping("/")
     @ResponseBody
     String home() {
