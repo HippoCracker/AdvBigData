@@ -147,4 +147,8 @@ public class JsonContext implements ParseContext, DocumentContext {
     public static JsonElement parseJson(String jsonString) {
         return (JsonElement) new JsonContext().configuration.jsonProvider().parse(jsonString);
     }
+
+    public static JsonElement restore(String key, Object value) {
+        return (JsonElement) new JsonContext().configuration.jsonProvider().restore(key, value);
+    }
 }

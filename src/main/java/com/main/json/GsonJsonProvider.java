@@ -254,6 +254,13 @@ public class GsonJsonProvider extends AbstractJsonProvider {
     }
 
     @Override
+    public Object restore(String key, Object value) {
+        JsonObject obj = new JsonObject();
+        obj.add(key, createJsonElement(value));
+        return restore(obj);
+    }
+
+    @Override
     public Object restore(Object obj) {
         if (!isMap(obj)) {
             throw new IllegalArgumentException("restore operation cannot apply to object: "

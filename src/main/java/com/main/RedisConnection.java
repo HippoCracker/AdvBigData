@@ -37,9 +37,9 @@ public class RedisConnection {
         return jedis.exists(key);
     }
 
-    public void saveAuthCode(String key) {
-        jedis.set(key, "");
-        jedis.expire(key, 1800);
+    public void saveAuthCode(String key, String encodedKey) {
+        jedis.set(encodedKey, "");
+        jedis.expire(encodedKey, 1800);
     }
 
     public String set(Set<Map.Entry<String, JsonElement>> entrySet) {

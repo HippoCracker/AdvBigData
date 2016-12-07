@@ -66,13 +66,16 @@ public class Json {
     }
 
     public boolean isEmpty() {
-        return (jsonContext.json() == null && jsonContext.flatJson() == null);
+        return (jsonContext.json() == null &&
+                (jsonContext.flatJson() == null) || jsonContext.flatJsonString().equals("{}"));
     }
 
     public Json parse(String json) {
         jsonContext.parse(json);
         return this;
     }
+
+    public JsonObject getFlatJson() { return jsonContext.flatJson(); }
 
     public String jsonString() {
         return jsonContext.jsonString();

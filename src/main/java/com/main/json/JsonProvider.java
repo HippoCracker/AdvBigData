@@ -53,6 +53,8 @@ public interface JsonProvider {
 
     Object restore(Object obj);
 
+    Object restore(String key, Object value);
+
     void add(Object obj, String key, Object value);
 
     void remove(Object obj, String key);
