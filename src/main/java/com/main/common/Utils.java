@@ -16,10 +16,10 @@ public final class Utils {
     public static final String SCHEMA_KEY ="schemaKey";
     public static final String STORAGE_KEY ="storageKey";
     public static final String E_TAG ="etag";
-    public static final String VERSION = "_version";
-    public static final String ID = "_id";
-    public static final String NAME = "_name";
-    public static final String TYPE = "_type";
+    public static final String VERSION = "__version";
+    public static final String ID = "__id";
+    public static final String NAME = "__name";
+    public static final String TYPE = "__type";
 
 
     public static <T> T notNull(T object, String message, Object... values) {
@@ -83,7 +83,7 @@ public final class Utils {
         return true;
     }
 
-    public static String generateETag(String key)
+    public static String md5(String key)
             throws UnsupportedEncodingException {
         byte[] bytes = key.getBytes("UTF-8");
         MessageDigest md = null;
@@ -95,6 +95,24 @@ public final class Utils {
         md.update(bytes);
         bytes = md.digest();
 
+        return byteToHex(bytes);
+    }
+
+    public static String sha1(String str) {
+        String sha1 = "";
+        try
+        {
+            MessageDigest crypt = MessageDigest.getInstance("SHA-1");
+            crypt.reset();
+            crypt.update(str.getBytes("UTF-8"));
+            sha1 = byteToHex(crypt.digest());
+        } catch(NoSuchAlgorithmException | UnsupportedEncodingException e) {
+            throw new IllegalStateException(e);
+        }
+        return sha1;
+    }
+
+    private static String byteToHex(byte[] bytes) {
         StringBuffer hexBuilder = new StringBuffer();
         for (int i = 0; i < bytes.length; i++) {
             String hex = Integer.toHexString(0xff & bytes[i]);
@@ -103,5 +121,4 @@ public final class Utils {
         }
         return hexBuilder.toString();
     }
-
 }

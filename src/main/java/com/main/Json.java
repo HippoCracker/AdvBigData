@@ -171,7 +171,7 @@ public class Json {
         String etag = null;
         int version = jsonContext.getAsInt(VERSION) + 1;
         try {
-            etag = Utils.generateETag(storageKey + version);
+            etag = Utils.md5(storageKey + version);
         } catch (UnsupportedEncodingException e) {
             throw new IllegalStateException("Unable to generate etag, storageKey: "
                     + storageKey + " version: " + version, e);
@@ -207,8 +207,6 @@ public class Json {
             throw new IllegalArgumentException("Missing attribute: " + name);
         }
     }
-
-
 }
 
 

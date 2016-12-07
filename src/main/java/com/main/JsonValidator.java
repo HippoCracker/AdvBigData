@@ -4,9 +4,14 @@ package com.main;
 
 import com.google.gson.JsonElement;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import static com.main.common.Utils.SCHEMA;
+
+import static com.main.common.Utils.SEPARATOR;
+import static com.main.common.Utils.isNumeric;
+import static com.main.common.Utils.join;
 
 public class JsonValidator {
 
@@ -21,9 +26,12 @@ public class JsonValidator {
         for (Map.Entry<String, JsonElement> entry : data.flat().flatEntrySet()) {
             String key = entry.getKey();
             JsonElement value = entry.getValue();
-            if (value.isJsonArray()) {
+            if (isNumeric(String.valueOf(key.charAt(key.length() - 1)))) {
                 continue;
             }
+            String[] tokens = key.split("\\.");
+            tokens[2] = SCHEMA;
+            key = join(SEPARATOR, tokens);
             if (!schema.hasFlat(key)) {
                 return new ValidateResult(false, "Invalid attribute: " + key);
             }

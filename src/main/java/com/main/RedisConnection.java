@@ -4,8 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import redis.clients.jedis.Jedis;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 public class RedisConnection {
@@ -40,7 +39,7 @@ public class RedisConnection {
 
     public void saveAuthCode(String key) {
         jedis.set(key, "");
-        jedis.expire(key, 600);
+        jedis.expire(key, 1800);
     }
 
     public String set(Set<Map.Entry<String, JsonElement>> entrySet) {

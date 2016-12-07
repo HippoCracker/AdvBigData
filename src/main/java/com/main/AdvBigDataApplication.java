@@ -5,8 +5,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.main.cache.Cache;
 import com.main.cache.LRUCache;
+import com.main.common.Utils;
 import com.main.context.JsonContext;
-import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.stereotype.Controller;
@@ -28,6 +28,8 @@ public class AdvBigDataApplication {
     private static RedisConnection conn = new RedisConnection();
     private static ElasticSearch elasticSearch = new ElasticSearch();
     private static Cache cache = new LRUCache<String, String>(100);
+    private static IndexQueue indexQueue = new IndexQueue(100, elasticSearch);
+
 
     @ResponseBody
     @GetMapping({"/{type}/{name}/{id}", "/{type}/{name}", "/{type}/{name}/_schema"})
@@ -195,11 +197,8 @@ public class AdvBigDataApplication {
         return conn.hasAuthCode(authCode);
     }
 
-    private void index(Json jsonObject) {
-        elasticSearch.index(jsonObject.getAsString(NAME),
-                            jsonObject.getAsString(TYPE),
-                            jsonObject.getAsString(ID),
-                            jsonObject.jsonString());
+    private void index(Json json) {
+        elasticSearch.index(json);
     }
 
     private String search(String index, String type, JsonElement jsonElement) {
@@ -224,12 +223,10 @@ public class AdvBigDataApplication {
 
     @PostMapping("/")
     @ResponseBody
-    String authorize(HttpServletRequest req,
-                     HttpServletResponse res,
+    String authorize(HttpServletResponse res,
                      @RequestBody MultiValueMap<String,String> formData) {
-        String plainClientCredentials= formData.get("username") + ":" + formData.get("password");
-        String base64ClientCredentials = new String(Base64.encodeBase64(plainClientCredentials.getBytes()));
-        String key = "Basic " + base64ClientCredentials;
+        String data = formData.get("username") + ":" + formData.get("password");
+        String key = Utils.sha1(data);
         conn.saveAuthCode(key);
         res.setHeader("Authorization", key);
         return "";
@@ -243,5 +240,8 @@ public class AdvBigDataApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(AdvBigDataApplication.class, args);
+
+        Thread t = new Thread(indexQueue);
+        t.start();
     }
 }
