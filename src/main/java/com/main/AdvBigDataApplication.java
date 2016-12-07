@@ -17,6 +17,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.sql.Timestamp;
+import java.util.Date;
 
 import static com.main.common.Utils.*;
 
@@ -26,7 +28,7 @@ import static com.main.common.Utils.*;
 public class AdvBigDataApplication {
 
     private static RedisConnection conn = new RedisConnection();
-    private static ElasticSearch elasticSearch = new ElasticSearch();
+    private static ElasticSearch<Json> elasticSearch = new ElasticSearch<Json>();
     private static Cache cache = new LRUCache<String, String>(100);
     private static IndexQueue indexQueue = new IndexQueue(100, elasticSearch);
 
@@ -89,8 +91,9 @@ public class AdvBigDataApplication {
         conn.set(request.jsonObject().flat().flatEntrySet());
 
         Json jsonObject = request.jsonObject();
-        index(jsonObject);
-
+        if (request.operationTarget() == RestRequest.OperationTarget.DATA) {
+            elasticSearch.index(jsonObject);
+        }
         res.setHeader("ETag", request.jsonObject().eTag());
         return "Object saved, id: " + request.jsonObject().id();
     }
@@ -109,7 +112,7 @@ public class AdvBigDataApplication {
         }
 
         cache.remove(request.jsonObject().storageKey());
-
+        elasticSearch.delete(request.jsonObject());
         conn.delete(request.jsonObject().storageKey());
         return "Delete object, id: " + request.jsonObject().id();
     }
@@ -144,8 +147,9 @@ public class AdvBigDataApplication {
             }
         }
         conn.set(jsonObject.flatEntrySet());
-        res.setHeader("ETag", jsonObject.eTag());
+        elasticSearch.update(jsonObject);
 
+        res.setHeader("ETag", jsonObject.eTag());
         return String.format("Merge succeed, ID = %s", jsonObject.id());
     }
 
@@ -175,6 +179,7 @@ public class AdvBigDataApplication {
 
         Json jsonObject = request.jsonObject();
         cache.put(jsonObject.storageKey(), jsonObject.eTag());
+        elasticSearch.update(jsonObject);
 
         conn.delete(request.jsonObject().storageKey());
         conn.set(jsonObject.flat().flatEntrySet());
@@ -195,10 +200,6 @@ public class AdvBigDataApplication {
     private boolean isAuthorized(HttpServletRequest req) {
         String authCode = req.getHeader("Authorization");
         return conn.hasAuthCode(authCode);
-    }
-
-    private void index(Json json) {
-        elasticSearch.index(json);
     }
 
     private String search(String index, String type, JsonElement jsonElement) {
@@ -225,10 +226,11 @@ public class AdvBigDataApplication {
     @ResponseBody
     String authorize(HttpServletResponse res,
                      @RequestBody MultiValueMap<String,String> formData) {
-        String data = formData.get("username") + ":" + formData.get("password");
-        String key = Utils.sha1(data);
-        conn.saveAuthCode(key);
-        res.setHeader("Authorization", key);
+        String key = formData.get("username") + ":" + formData.get("password");
+        String timestamp = new Timestamp(new Date().getTime()).toString();
+        String encoded = Utils.sha1(key + timestamp);
+        conn.saveAuthCode(key, encoded);
+        res.setHeader("Authorization", encoded);
         return "";
     }
 
