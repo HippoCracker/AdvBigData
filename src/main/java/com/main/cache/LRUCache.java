@@ -27,7 +27,7 @@ public class LRUCache<K, V> implements Cache<K, V> {
     }
 
     @Override
-    public void put(K key, V value) {
+    public V put(K key, V value) {
         V oldValue = map.put(key, value);
         if (oldValue != null) {
             removeThenAddKey(key);
@@ -35,14 +35,15 @@ public class LRUCache<K, V> implements Cache<K, V> {
             addKey(key);
         }
         if (map.size() > limit) {
-            map.remove(removeLast());
+            return map.remove(removeLast());
         }
+        return null;
     }
 
     @Override
-    public void remove(K key) {
+    public V remove(K key) {
         removeFirstOccurrence(key);
-        map.remove(key);
+        return map.remove(key);
     }
 
     private void addKey(K key) {
