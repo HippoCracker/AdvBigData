@@ -13,6 +13,7 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.index.get.GetField;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -68,9 +69,9 @@ public class ElasticSearch<E extends Json> {
         String json = e.jsonString();
 
         UpdateRequest updateRequest = new UpdateRequest();
-        updateRequest.index("index");
-        updateRequest.type("type");
-        updateRequest.id("1");
+        updateRequest.index(index);
+        updateRequest.type(type);
+        updateRequest.id(id);
         updateRequest.doc(json);
         try {
             esClient.getClient().update(updateRequest).get();
@@ -82,38 +83,40 @@ public class ElasticSearch<E extends Json> {
     }
 
     public String search(String index, String type, JsonElement jsonElement) {
+        esClient.getClient().admin().indices().prepareRefresh().get();
+
         SearchRequestBuilder requestBuilder = esClient.getClient()
-                .prepareSearch(index).setTypes(type);
+                .prepareSearch(index).setTypes(type).setSearchType(SearchType.DEFAULT);
 
         if (jsonElement.isJsonObject()) {
-            for (JsonElement field : jsonElement.getAsJsonObject().getAsJsonArray("field")) {
-                requestBuilder.addField(field.getAsString());
+            for (Map.Entry<String, JsonElement> entry : jsonElement.getAsJsonObject().entrySet()) {
+                requestBuilder.setQuery(QueryBuilders.matchQuery(entry.getKey(), entry.getValue()));
             }
         } else {
             throw new IllegalArgumentException(jsonElement.getClass().getName()
                     + " cannot use to store search fields and values.");
         }
-
-        SearchResponse response = requestBuilder.setQuery(QueryBuilders.matchAllQuery())
-                .execute().actionGet();
+        SearchResponse response = requestBuilder.execute().actionGet();
         SearchHit[] hits = response.getHits().getHits();
 
-        JsonObject container = new JsonObject();
-        for (JsonElement field : jsonElement.getAsJsonObject().getAsJsonArray("field")) {
-            JsonArray array = new JsonArray();
+        JsonArray container = new JsonArray();
+        for (Map.Entry<String, JsonElement> entry : jsonElement.getAsJsonObject().entrySet()) {
+            String key = entry.getKey();
+            JsonObject keyResult = new JsonObject();
+            keyResult.add(key, entry.getValue());
+
+            JsonArray result = new JsonArray();
             for (SearchHit hit : hits) {
-                final SearchHitField result = hit.field(field.getAsString());
-                if (result == null) {
-                    continue;
-                }
-                final JsonElement value = JsonContext.parseJson(result.getValue());
-                if (!array.contains(value)) {
-                    array.add(value);
+                String sourceString = hit.getSourceAsString();
+                JsonElement source = JsonContext.parseJson(sourceString);
+                if (!result.contains(source)) {
+                    result.add(source);
                 }
             }
-            container.add(field.getAsString(), array);
+            keyResult.add("result", result);
+            container.add(keyResult);
         }
-        return container.toString();
+        return JsonContext.toJson(container);
     }
 
     public void shutdown() {
